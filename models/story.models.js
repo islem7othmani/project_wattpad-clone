@@ -8,7 +8,7 @@ const StorySchema = new mongoose.Schema(
 		categories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
 		tags: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tag" }],
 		targetAudience: { type: String },
-		language: { type: String, default: "Arabic" },
+		language: { type: String, default: "ar" },
 		rating: { type: Number },
 		author: {
 			type: mongoose.Schema.Types.ObjectId,
@@ -19,8 +19,9 @@ const StorySchema = new mongoose.Schema(
 		views: { type: Number, default: 0 },
 		votes: { type: Number, default: 0 },
 		readTime: { type: Number, default: 0 },
+		isCompleted: { type: Boolean, default: false },
 	},
 	{ timestamps: true }
 );
 
-module.exports = mongoose.model("Story", StorySchema);
+module.exports = mongoose.model("Story", StorySchema, "Story");

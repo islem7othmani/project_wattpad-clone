@@ -30,9 +30,40 @@ const getStories = async (req, res) => {
 };
 
 const getStory = async (req, res) => {
-	const story = req.story;
 	try {
-		return res.status(200).json(story);
+		const story = await storyModel.aggregate([
+			{ $match: { _id: req.story._id } },
+			{
+				$lookup: {
+					from: "chapters",
+					localField: "_id",
+					foreignField: "story",
+					as: "chapters",
+				},
+			},
+			{
+				$lookup: {
+					from: "tags",
+					localField: "tags",
+					foreignField: "_id",
+					as: "tags",
+				},
+			},
+			{
+				$lookup: {
+					from: "categories",
+					localField: "categories",
+					foreignField: "_id",
+					as: "categories",
+				},
+			},
+			{
+				$addFields: {
+					chaptersNumber: { $size: "$chapters" },
+				},
+			},
+		]);
+		return res.status(200).json(story[0]);
 	} catch (err) {
 		return res.status(500).json(err);
 	}
