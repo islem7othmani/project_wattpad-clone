@@ -25,9 +25,8 @@ const getUsers = async (req, res) => {
 	}
 };
 const getUser = async (req, res) => {
-	const id = req.params.userId;
+	const user = req.user;
 	try {
-		const user = await userModels.findById(id);
 		return res.status(200).json(user);
 	} catch (err) {
 		return res.status(500).json(err);
@@ -35,7 +34,7 @@ const getUser = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-	const id = req.params.userId;
+	const id = req.user._id;
 	try {
 		const user = await userModels.findByIdAndDelete(id);
 		return res.status(200).json(user);
@@ -44,7 +43,7 @@ const deleteUser = async (req, res) => {
 	}
 };
 const updateUser = async (req, res) => {
-	const id = req.params.userId;
+	const id = req.user._id;
 	try {
 		const user = await userModels.findByIdAndUpdate(id, req.body, {
 			new: true,
