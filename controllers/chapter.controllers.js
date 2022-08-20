@@ -1,5 +1,6 @@
 const chapterModel = require("../models/chapter.models");
 const readModels = require("../models/read.models");
+const mongoose = require("mongoose");
 const createChapter = async (req, res) => {
 	const newChapter = new chapterModel({
 		title: req.body.title,
@@ -65,12 +66,51 @@ const getChapter = async (req, res) => {
 				},
 			},
 			{
+				$lookup: {
+					from: "Vote",
+					let: {
+						chapterId: "$_id",
+					},
+					pipeline: [
+						{
+							$match: {
+								$expr: {
+									$and: {
+										$eq: ["$$chapterId", "$chapter"],
+										$eq: [
+											"$voter",
+											mongoose.Types.ObjectId(req.verifiedUser._id),
+										],
+									},
+								},
+							},
+						},
+					],
+					as: "voters",
+				},
+			},
+			{
+				$addFields: {
+					voters: { $size: "$voters" },
+				},
+			},
+
+			{
 				$addFields: {
 					reads: { $size: "$reads" },
 					votes: { $size: "$votes" },
 					comments: { $size: "$comments" },
+					canVote: {
+						$switch: {
+							branches: [
+								{ case: { $ne: ["$voters", 0] }, then: false },
+								{ case: { $eq: ["$voters", 0] }, then: true },
+							],
+						},
+					},
 				},
 			},
+			{ $unset: "voters" },
 		]);
 		return res.status(200).json(chap[0]);
 	} catch (err) {

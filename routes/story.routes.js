@@ -12,12 +12,20 @@ const {
 	updateStory,
 	deleteStory,
 } = require("../controllers/story.controller");
+const {
+	unbookmarkStory,
+	bookmarkStory,
+} = require("../controllers/bookmark.controllers");
 const verifyToken = require("../middleware/verifyToken");
 const isStoryOwner = require("../middleware/isStoryOwner");
 const chapterModels = require("../models/chapter.models");
 const storyModels = require("../models/story.models");
-const { voteChapter } = require("../controllers/vote.controllers");
+const {
+	voteChapter,
+	unvoteChapter,
+} = require("../controllers/vote.controllers");
 const { createComment } = require("../controllers/comment.controllers");
+const isUserLoggedIn = require("../middleware/isUserLoggedIn");
 const router = require("express").Router();
 router.param("story", async (req, res, next, id) => {
 	try {
@@ -47,9 +55,12 @@ router.post("/", verifyToken, createStory);
 router.put("/:story", verifyToken, isStoryOwner, updateStory);
 router.delete("/:story", verifyToken, isStoryOwner, deleteStory);
 router.get("/", getStories);
-router.get("/:story", getStory);
+router.get("/:story", isUserLoggedIn, getStory);
 
 router.post("/:story/chapters/:chapter/vote", verifyToken, voteChapter);
+router.delete("/:story/chapters/:chapter/unvote", verifyToken, unvoteChapter);
+router.post("/:story/bookmark", verifyToken, bookmarkStory);
+router.post("/:story/unbookmark", verifyToken, unbookmarkStory);
 router.post("/:story/chapters/:chapter/comments", verifyToken, createComment);
 
 router.get("/:story/chapters", getStoryChapters);

@@ -1,5 +1,5 @@
 const storyModel = require("../models/story.models");
-
+const mongoose = require("mongoose");
 const createStory = async (req, res) => {
 	const newStory = new storyModel({
 		title: req.body.title,
@@ -21,8 +21,15 @@ const createStory = async (req, res) => {
 };
 
 const getStories = async (req, res) => {
+	let searchObj = { ...req.query };
+
 	try {
-		const stories = await storyModel.find();
+		const stories = await storyModel.find({
+			title: {
+				$regex: `${req.query.q}`,
+				$options: "i",
+			},
+		});
 		return res.status(200).json(stories);
 	} catch (err) {
 		return res.status(500).json(err);
@@ -137,6 +144,54 @@ const getStory = async (req, res) => {
 					},
 				},
 			},
+
+			...(req.verifiedUser
+				? [
+						{
+							$lookup: {
+								from: "Bookmark",
+								let: {
+									storyId: "$_id",
+								},
+								pipeline: [
+									{
+										$match: {
+											$expr: {
+												$and: {
+													$eq: ["$$storyId", "$story"],
+													$eq: [
+														"$user",
+														mongoose.Types.ObjectId(req.verifiedUser._id),
+													],
+												},
+											},
+										},
+									},
+								],
+								as: "bookmarkers",
+							},
+						},
+						{
+							$addFields: {
+								bookmarkers: { $size: "$bookmarkers" },
+							},
+						},
+
+						{
+							$addFields: {
+								canBookmark: {
+									$switch: {
+										branches: [
+											{ case: { $ne: ["$bookmarkers", 0] }, then: false },
+											{ case: { $eq: ["$bookmarkers", 0] }, then: true },
+										],
+									},
+								},
+							},
+						},
+						{ $unset: "bookmarkers" },
+				  ]
+				: []),
 		]);
 		return res.status(200).json(story[0]);
 	} catch (err) {
