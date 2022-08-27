@@ -4,11 +4,11 @@ const jwt = require("jsonwebtoken");
 const transporter = require("../utils/nodemailer");
 const Redis = require("ioredis");
 const crypto = require("crypto");
+const { emailQueue } = require("../queues");
+const { SEND_EMAIL_VERIFICATION, SEND_RESET_EMAIL } = require("../constants");
 const redisIO = new Redis({
 	port: process.env.REDIS_PORT,
 	host: process.env.REDIS_HOST,
-	username: process.env.REDIS_USERNAME,
-	password: process.env.REDIS_PASSWORD,
 });
 const login = async (req, res) => {
 	try {
@@ -60,11 +60,11 @@ const register = async (req, res) => {
 			.slice(0, 6)
 			.toUpperCase();
 		redisIO.set(code, savedUser.email, "ex", 3600);
-		await transporter.sendMail({
-			from: "contact@wattpad-clone.com",
+		await emailQueue.add(SEND_EMAIL_VERIFICATION, {
+			from: "wattpad@clone-wattpad.com",
 			to: savedUser.email,
-			subject: "verify your account",
-			html: `<p> ${code} </p>`,
+			subject: "verify email",
+			body: `this code: ${code}`,
 		});
 		return res.status(200).json({ message: "verify your account" });
 	} catch (err) {
@@ -101,12 +101,11 @@ const forgotPassword = async (req, res) => {
 			.slice(0, 6)
 			.toUpperCase();
 		redisIO.set(code, userExist.email, "ex", 3600);
-
-		await transporter.sendMail({
-			from: "contact@wattpad-clone.com",
+		await emailQueue.add(SEND_RESET_EMAIL, {
+			from: "wattpad@clone-wattpad.com",
 			to: userExist.email,
 			subject: "reset password",
-			html: `<p> ${code} </p>`,
+			body: `this code: ${code}`,
 		});
 		return res.status(200).json({
 			message: "if your email valid check your inbox to reset password",
